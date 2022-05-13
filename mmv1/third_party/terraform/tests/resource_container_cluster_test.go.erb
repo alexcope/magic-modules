@@ -2012,6 +2012,51 @@ func TestAccContainerCluster_withLoggingConfig(t *testing.T) {
 	})
 }
 
+func testAccContainerCluster_withBinauthzEvaluationMode(t *testing.T) {
+	t.Parallel()
+
+	clusterName := fmt.Sprintf("tf-test-cluster-%s", randString(t, 10))
+	vcrTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckContainerClusterDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccContainerCluster_basic(clusterName),
+			},
+			{
+				ResourceName:        "google_container_cluster.with_autopilot",
+				ImportState:         true,
+				ImportStateVerify:   true,
+			},
+			{
+				Config: testAccContainerCluster_withBinauthzEvaluationModeEnabled(clusterName),
+			},
+			{
+				ResourceName:        "google_container_cluster.with_autopilot",
+				ImportState:         true,
+				ImportStateVerify:   true,
+			},
+			{
+				Config: testAccContainerCluster_withBinauthzEvaluationModeUpdate(clusterName),
+			},
+			{
+				ResourceName:        "google_container_cluster.with_autopilot",
+				ImportState:         true,
+				ImportStateVerify:   true,
+			},
+			{
+				Config: testAccContainerCluster_basic(clusterName),
+			},
+			{
+				ResourceName:        "google_container_cluster.with_autopilot",
+				ImportState:         true,
+				ImportStateVerify:   true,
+			},
+		},
+	})
+}
+
 func TestAccContainerCluster_withSoleTenantGroup(t *testing.T) {
 	t.Parallel()
 
@@ -5159,6 +5204,33 @@ resource "google_container_cluster" "primary" {
 }
 `, name)
 }
+
+func testAccContainerCluster_withBinauthzEvaluationModeEnabled(name string) string {
+	return fmt.Sprintf(`
+resource "google_container_cluster" "with_autopilot" {
+  name               = "%s"
+  location           = "us-central1-a"
+  initial_node_count = 1
+  binary_authorization_evaluation_mode {
+	EvaluationMode =  "PROJECT_SINGLETON_POLICY_ENFORCE" 
+  }
+}
+`, name)
+}
+
+func testAccContainerCluster_withBinauthzEvaluationModeUpdate(name string) string {
+	return fmt.Sprintf(`
+resource "google_container_cluster" "with_autopilot" {
+  name               = "%s"
+  location           = "us-central1-a"
+  initial_node_count = 1
+  binary_authorization_evaluation_mode {
+	EvaluationMode = "DISABLED"
+  }
+}
+`, name)
+}
+
 
 func testAccContainerCluster_withSoleTenantGroup(name string) string {
 	return fmt.Sprintf(`
